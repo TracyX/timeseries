@@ -1,0 +1,125 @@
+nasdaq=read.csv("D:\\work\\tmall\\nasdaq.csv")#read in the dataset with full path
+library(forecast)
+nasdaq=ts(nasdaq$Close,start=c(2009,1), frequency=52*5)
+plot(nasdaq,main="???????????????????????????")
+de=decompose(nasdaq)
+plot(de)# decomposition of the time series and plot all component
+library(forecast)
+acf(nasdaq)
+pacf(nasdaq)# acf and pacf plot for nasdaq
+arima model
+fit <- auto.arima(nasdaq)#
+summary(fit)
+print(forecast(fit,h=5))
+plot(forecast(fit,h=5))  #forecasting
+## plot the observed and fitted nasdaq index by ARIMA model
+plot(nasdaq,main="??????????????????????????????????????????",col="blue", lwd=0.5)
+lines(fitted(fit),col="red",lwd=0.3)
+legend("bottomright",c("?????????", "??????"),lty=c(1,1),lwd=c(2.5,2.5),col=c("blue","red"))
+## computing the model accuracy
+print(1-mean(abs((nasdaq-fitted(fit))/nasdaq)))
+print(mean(abs(nasdaq-fitted(fit))))
+## ETS model
+ets.fit=ets(nasdaq,model="ZZZ")
+summary(ets.fit)
+print(forecast(ets.fit,h=5))
+## computing the model accuracy
+print(1-mean(abs((nasdaq-fitted(ets.fit))/nasdaq)))
+print(mean(abs(nasdaq-fitted(ets.fit))))
+## plots of ETS fit
+plot(fitted(fit),main="ETS???????????????",col="blue", lwd=0.5)
+lines(fitted(ets.fit),col="red",lwd=0.3)
+legend("bottomright",c("?????????", "??????"),lty=c(1,1),lwd=c(2.5,2.5),col=c("blue","red"))
+## other models
+bats.fit <- bats(nasdaq)
+print(1-mean(abs((nasdaq-bats.fit$fitted.values)/nasdaq)))
+print(mean(abs(nasdaq-bats.fit$fitted.values)))
+forecast(bats.fit,h=5)
+
+rw.fcast <- rwf(nasdaq,h=5)
+plot(rw.fcast)
+print(1-mean(abs((nasdaq[2:1292]-rw.fcast$fitted[2:1292])/nasdaq[2:1292])))
+print(mean(abs(nasdaq[2:1292]-rw.fcast$fitted[2:1292])))
+
+holt.fit=holt(nasdaq,h=5)
+print(1-mean(abs((nasdaq-holt.fit$fitted)/nasdaq)))
+print(mean(abs(nasdaq-holt.fit$fitted)))
+holt.fit=holt(nasdaq,h=5)
+
+spline.fit=splinef(nasdaq[754:1292], h=5, level=95,  method="mle")
+print(1-mean(abs((nasdaq[754:1292]-spline.fit$fitted)/nasdaq[754:1292])))
+print(mean(abs(nasdaq[754:1292]-spline.fit$fitted)))
+spline.fit1=splinef(nasdaq[754:1292], h=5, level=95,  method="gcv")
+print(1-mean(abs((nasdaq[754:1292]-spline.fit1$fitted)/nasdaq[754:1292])))
+print(mean(abs(nasdaq[754:1292]-spline.fit1$fitted)))
+
+
+
+print(1-mean(abs((nasdaq-theta.fit$fitted)/nasdaq)))
+print(mean(abs(nasdaq-theta.fit$fitted)))
+
+library(rugarch)
+spec = ugarchspec()
+fit = ugarchfit(data = nasdaq, spec = spec,out.sample = 5)
+mean(abs(residuals(fit)))
+ugarchforecast(fit, n.ahead=5)
+
+library(tsDyn)
+aar.fit=aar(nasdaq,m=3)
+print(mean(abs(residuals(aar.fit)[4:1292])))
+print(1-mean(abs(residuals(aar.fit)[2:1292])/nasdaq[2:1292]))
+
+aar.fit1=aar(nasdaq,m=1)
+print(mean(abs(residuals(aar.fit1)[2:1292])))
+print(1-mean(abs(residuals(aar.fit1)[2:1292])/nasdaq[2:1292]))
+
+plot(nasdaq,col="blue", lwd=0.5)
+lines(fitted(aar.fit), col="red",lwd=0.3)
+legend("bottomright",c("?????????", "??????"),lty=c(1,1),lwd=c(2.5,2.5),col=c("blue","red"))
+pred_aar <- predict(aar.fit, n.ahead=5, type="bootstrap", n.boot=200)
+
+
+net.fit <- nnetar(nasdaq)
+plot(forecast(net.fit,h=5))
+
+print(1-mean(abs((nasdaq[261:1292]-net.fit$fitted[261:1292])/nasdaq[261:1292])))
+print(mean(abs(nasdaq[261:1292]-net.fit$fitted[261:1292])))
+
+lstar.fit=lstar(x = nasdaq, m = 3)
+print(mean(abs(residuals(lstar.fit)[4:1292])))
+print(1-mean(abs(residuals(lstar.fit)[4:1292])/nasdaq[4:1292]))
+
+
+### SVM and random forest
+library(rminer)
+d=CasesSeries(nasdaq,c(1,2,3))
+M=fit(y~.,d,model="svm",search="heuristic")
+P=predict(M,d)
+print(1-mean(abs((nasdaq[3:1292]-P)/nasdaq[3:1292])))
+print(mean(abs(nasdaq[3:1292]-P)))
+
+plot(nasdaq[3:1292],main="SVM?????????",col="blue", type="l",lwd=0.5)
+lines(P,col="red",lwd=0.3)
+legend("bottomright",c("?????????", "??????"),lty=c(1,1),lwd=c(2.5,2.5),col=c("blue","red"))
+new=c(nasdaq,as.numeric(forecast(fit,h=5)$mean))
+dnew=CasesSeries(new,c(1,2,3))
+P1=predict(M,dnew)
+P1[1290:1294]
+
+library(randomForest)
+set.seed(276)
+rf.fit = randomForest(y ~ ., data=d, mtry=3,
+                         importance=TRUE, na.action=na.omit)
+print(1-mean(abs((nasdaq[3:1292]-rf.fit$predicted)/nasdaq[3:1292])))
+print(mean(abs(nasdaq[3:1292]-rf.fit$predicted)))
+P2=predict(rf.fit,dnew)
+P2[1290:1294]
+### plots of the fitted error of the competive superior models
+
+plot(1:1289, abs(nasdaq[1:1289]-fitted(fit)[1:1289]), type="l", col=2, lwd=0.5, 
+     ylab="Mean Absolte Error",xlab="Time",
+     main="???????????????????????????")
+lines(1:1289, abs(nasdaq[1:1289]-fitted(ets.fit)[1:1289]), type="l",lwd=0.4,col=3)
+lines(1:1289, abs(nasdaq[1:1289]-P1[1:1289]), type="l",lwd=0.3,col=4)
+lines(1:1289, abs(nasdaq[1:1289]-P2[1:1289]), type="l",lwd=0.2,col=5)
+legend("topleft",legend=c("ARIMA","ETS","SVM","????????????"),lty=c(1,1,1,1),col=2:5,cex=0.8)
