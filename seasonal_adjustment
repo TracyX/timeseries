@@ -1,0 +1,21 @@
+### seasonal and holiday adjustment
+install.packages("seasonal")
+require(seasonal)
+Sys.setenv(X13_PATH = "D:/Program Files/R/R-3.0.2/library/x13/x13as")
+ftms=read.table("D:\\work\\audio\\ftms.txt")
+ftms=as.matrix(ftms)
+ftms=t(ftms)
+
+ftms=ts(data=ftms,frequency = 12,start = c(2009, 1))
+data(holiday)
+cny.ts <- genhol(cny, start = -7, end = 7, center = "calendar", frequency = 12)
+m1 <- seas(ftms, xreg = cny.ts, transform.function = "log",  regression.usertype = "holiday", regression.aictest = NULL, x11.mode = "mult")
+plot(m1, trend = TRUE,main="春节效应调整对比图")
+legend("topleft", legend=c("原序列","调整后","趋势")，col=c("red","black","blue"),lwd=c(2,1,0.5),lty=c(1,1,2), bty="n")
+write.table(final(m1), "D:\\work\\audio\\final.txt", sep="\t")
+ write.table(series(m1, "x11.trend"), "D:\\work\\audio\\trend.txt", sep="\t")
+ write.table(series(m1, "x11.seasonal"), "D:\\work\\audio\\seasonal.txt", sep="\t")
+ write.table(series(m1, "x11.irregular"), "D:\\work\\audio\\irregular.txt", sep="\t")
+ write.table(series(m1, "x11.calendar"), "D:\\work\\audio\\calendar.txt", sep="\t")
+
+series(m1, "x11.trend")[1]*(series(m1, "x11.seasonal")[1])*(series(m1, "x11.irregular")[1])*(series(m1, "x11.calendar")[1])  ##equals the original
